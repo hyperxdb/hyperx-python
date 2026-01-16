@@ -7,7 +7,7 @@ HyperX is a hypergraph database designed for AI/ML applications. Unlike vector d
 ## Installation
 
 ```bash
-pip install hyperx
+pip install hyperxdb
 ```
 
 **Requirements:** Python 3.10+
