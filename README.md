@@ -67,7 +67,7 @@ from hyperx import HyperX, AsyncHyperX
 # Sync client
 db = HyperX(
     api_key="hx_sk_live_abc123...",           # Required: your API key
-    base_url="https://api...",     # Optional: custom API URL
+    base_url="https://api.hyperxdb.dev",  # Optional: defaults to this
     timeout=30.0,                  # Optional: request timeout in seconds
 )
 
