@@ -103,20 +103,6 @@ class HyperedgesAPI:
         self._http.delete(f"/v1/hyperedges/{hyperedge_id}")
         return True
 
-    def list(self, limit: int = 100, offset: int = 0) -> list[Hyperedge]:
-        """List hyperedges with pagination.
-
-        Args:
-            limit: Maximum number to return (default: 100)
-            offset: Number to skip (default: 0)
-
-        Returns:
-            List of hyperedges
-        """
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
-        data = self._http.get("/v1/hyperedges", params=params)
-        return [Hyperedge.model_validate(h) for h in data]
-
     def update(
         self,
         hyperedge_id: str,
@@ -147,3 +133,17 @@ class HyperedgesAPI:
 
         data = self._http.put(f"/v1/hyperedges/{hyperedge_id}", json=payload)
         return Hyperedge.model_validate(data)
+
+    def list(self, limit: int = 100, offset: int = 0) -> list[Hyperedge]:
+        """List hyperedges with pagination.
+
+        Args:
+            limit: Maximum number to return (default: 100)
+            offset: Number to skip (default: 0)
+
+        Returns:
+            List of hyperedges
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        data = self._http.get("/v1/hyperedges", params=params)
+        return [Hyperedge.model_validate(h) for h in data]
