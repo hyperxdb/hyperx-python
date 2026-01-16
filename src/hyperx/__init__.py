@@ -15,6 +15,7 @@ from hyperx.models import Entity, Hyperedge, HyperedgeMember, PathResult, Search
 from hyperx.resources.hyperedges import MemberInput
 
 __all__ = [
+    "__version__",
     "HyperX",
     "AsyncHyperX",
     "Entity",
