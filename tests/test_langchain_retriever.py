@@ -9,7 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from hyperx import Entity, Hyperedge, HyperedgeMember, PathResult, SearchResult
-from hyperx.integrations.langchain import HyperXRetriever
+from hyperx.integrations.langchain import HyperXRetriever, HyperXRetrievalPipeline
 
 
 @pytest.fixture
@@ -229,3 +229,70 @@ def test_retriever_empty_results():
     docs = retriever.invoke("nonexistent")
 
     assert docs == []
+
+
+# =============================================================================
+# HyperXRetrievalPipeline Tests
+# =============================================================================
+
+
+def test_pipeline_basic(mock_client):
+    """Test basic pipeline without reranking."""
+    pipeline = HyperXRetrievalPipeline(
+        client=mock_client,
+        vector_weight=0.7,
+        text_weight=0.3,
+        k=5,
+    )
+
+    docs = pipeline.invoke("React hooks")
+
+    assert len(docs) >= 1
+    assert docs[0].metadata["source"] == "hyperx"
+
+
+def test_pipeline_with_reranker(mock_client):
+    """Test pipeline with custom reranker."""
+    def simple_reranker(query: str, docs: list) -> list:
+        # Reverse order as simple reranking
+        return list(reversed(docs))
+
+    pipeline = HyperXRetrievalPipeline(
+        client=mock_client,
+        vector_weight=0.7,
+        text_weight=0.3,
+        k=5,
+        reranker=simple_reranker,
+    )
+
+    docs = pipeline.invoke("React hooks")
+
+    assert len(docs) >= 1
+
+
+def test_pipeline_weight_validation():
+    """Test that weights must sum to 1.0."""
+    with pytest.raises(ValueError, match="must equal 1.0"):
+        HyperXRetrievalPipeline(
+            client=MagicMock(),
+            vector_weight=0.5,
+            text_weight=0.3,  # Sums to 0.8, not 1.0
+            k=5,
+        )
+
+
+def test_pipeline_with_graph_expansion(mock_client_with_paths):
+    """Test pipeline with graph expansion enabled."""
+    pipeline = HyperXRetrievalPipeline(
+        client=mock_client_with_paths,
+        vector_weight=0.7,
+        text_weight=0.3,
+        expand_graph=True,
+        max_hops=2,
+        k=10,
+    )
+
+    docs = pipeline.invoke("React")
+
+    # Should include expanded results
+    assert len(docs) >= 1

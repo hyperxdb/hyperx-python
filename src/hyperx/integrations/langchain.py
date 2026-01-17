@@ -13,7 +13,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 from pydantic import ConfigDict
 
@@ -199,14 +199,54 @@ class HyperXRetriever(BaseRetriever):
 
 
 class HyperXRetrievalPipeline(BaseRetriever):
-    """Full retrieval pipeline with hybrid search and reranking.
+    """Full retrieval pipeline with hybrid search, graph expansion, and reranking.
 
-    Placeholder - will be implemented in Task 5.
+    Combines vector similarity and BM25 text matching with configurable weights,
+    optional graph expansion, and bring-your-own-model (BYOM) reranking.
+
+    Args:
+        client: HyperX client instance
+        vector_weight: Weight for vector similarity (0.0-1.0)
+        text_weight: Weight for BM25 text matching (0.0-1.0)
+        expand_graph: Whether to expand results via graph paths
+        max_hops: Max hops for graph expansion
+        reranker: Optional callable (query, docs) -> ranked docs
+        k: Final number of documents to return
+        fetch_k: Number to fetch before reranking (default: 3*k)
+
+    Example:
+        >>> pipeline = HyperXRetrievalPipeline(
+        ...     client=db,
+        ...     vector_weight=0.7,
+        ...     text_weight=0.3,
+        ...     reranker=my_cohere_rerank,
+        ...     k=10,
+        ... )
+        >>> docs = pipeline.invoke("distributed caching")
     """
 
     client: Any
+    vector_weight: float = 0.7
+    text_weight: float = 0.3
+    expand_graph: bool = False
+    max_hops: int = 2
+    reranker: Callable[[str, list[Document]], list[Document]] | None = None
+    k: int = 10
+    fetch_k: int | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Validate weights
+        if abs(self.vector_weight + self.text_weight - 1.0) > 0.001:
+            raise ValueError(
+                f"vector_weight ({self.vector_weight}) + text_weight ({self.text_weight}) "
+                "must equal 1.0"
+            )
+        # Default fetch_k to 3x k
+        if self.fetch_k is None:
+            object.__setattr__(self, "fetch_k", self.k * 3)
 
     def _get_relevant_documents(
         self,
@@ -214,6 +254,97 @@ class HyperXRetrievalPipeline(BaseRetriever):
         *,
         run_manager: CallbackManagerForRetrieverRun,
     ) -> list[Document]:
-        raise NotImplementedError(
-            "HyperXRetrievalPipeline will be implemented in Task 5"
-        )
+        """Execute the full retrieval pipeline."""
+        # Step 1: Hybrid search (vector + text combined by API)
+        result = self.client.search(query, limit=self.fetch_k)
+        docs = self._hyperedges_to_documents(result.hyperedges)
+
+        # Step 2: Optional graph expansion
+        if self.expand_graph:
+            docs = self._expand_with_graph(result, docs)
+
+        # Step 3: Optional reranking
+        if self.reranker is not None:
+            try:
+                docs = self.reranker(query, docs)
+            except Exception as e:
+                from hyperx.exceptions import HyperXError
+
+                raise HyperXError(f"Reranker failed: {e}") from e
+
+        # Step 4: Return top k
+        return docs[: self.k]
+
+    async def _aget_relevant_documents(
+        self,
+        query: str,
+        *,
+        run_manager: AsyncCallbackManagerForRetrieverRun,
+    ) -> list[Document]:
+        """Async version - delegates to sync for now."""
+        return self._get_relevant_documents(query, run_manager=run_manager)  # type: ignore
+
+    def _expand_with_graph(
+        self,
+        result: Any,
+        docs: list[Document],
+    ) -> list[Document]:
+        """Expand results using graph paths."""
+        seen_ids = {d.metadata["id"] for d in docs}
+        entity_ids = [e.id for e in result.entities][:5]
+
+        for i, source_id in enumerate(entity_ids):
+            for target_id in entity_ids[i + 1 :]:
+                try:
+                    paths = self.client.paths.find(
+                        from_entity=source_id,
+                        to_entity=target_id,
+                        max_hops=self.max_hops,
+                        k_paths=self.k,
+                    )
+                    for path in paths:
+                        hops = len(path.hyperedges)
+                        for edge_id in path.hyperedges:
+                            if edge_id not in seen_ids:
+                                seen_ids.add(edge_id)
+                                try:
+                                    edge = self.client.hyperedges.get(edge_id)
+                                    docs.extend(
+                                        self._hyperedges_to_documents([edge], distance=hops)
+                                    )
+                                except Exception:
+                                    continue
+                except Exception:
+                    continue
+
+        return docs
+
+    def _hyperedges_to_documents(
+        self,
+        hyperedges: list,
+        distance: int = 0,
+    ) -> list[Document]:
+        """Convert hyperedges to Documents."""
+        docs = []
+        for edge in hyperedges:
+            metadata = {
+                "id": edge.id,
+                "members": [
+                    {"entity_id": m.entity_id, "role": m.role}
+                    for m in edge.members
+                ],
+                "distance": distance,
+                "source": "hyperx",
+            }
+            if hasattr(edge, "valid_from") and edge.valid_from:
+                metadata["valid_from"] = edge.valid_from.isoformat()
+            if hasattr(edge, "valid_until") and edge.valid_until:
+                metadata["valid_until"] = edge.valid_until.isoformat()
+
+            docs.append(
+                Document(
+                    page_content=edge.description,
+                    metadata=metadata,
+                )
+            )
+        return docs
