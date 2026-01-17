@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from hyperx import Entity, Hyperedge, HyperedgeMember, SearchResult
 from hyperx.integrations.langchain import HyperXRetriever
@@ -76,3 +77,28 @@ def test_retriever_document_metadata(mock_client):
     assert docs[0].metadata["source"] == "hyperx"
     assert docs[0].metadata["distance"] == 0
     assert "members" in docs[0].metadata
+
+
+def test_retriever_invalid_strategy(mock_client):
+    """Test that invalid strategy raises ValidationError at construction."""
+    with pytest.raises(ValidationError, match="Input should be 'search' or 'graph'"):
+        HyperXRetriever(client=mock_client, strategy="invalid", k=5)
+
+
+def test_retriever_graph_strategy_not_implemented(mock_client):
+    """Test that graph strategy raises NotImplementedError."""
+    retriever = HyperXRetriever(client=mock_client, strategy="graph", k=5)
+
+    with pytest.raises(NotImplementedError, match="Graph strategy"):
+        retriever.invoke("test")
+
+
+def test_retriever_empty_results():
+    """Test retriever handles empty search results."""
+    client = MagicMock()
+    client.search.return_value = SearchResult(entities=[], hyperedges=[])
+
+    retriever = HyperXRetriever(client=client, strategy="search", k=5)
+    docs = retriever.invoke("nonexistent")
+
+    assert docs == []

@@ -18,7 +18,10 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import ConfigDict
 
 try:
-    from langchain_core.callbacks import CallbackManagerForRetrieverRun
+    from langchain_core.callbacks import (
+        AsyncCallbackManagerForRetrieverRun,
+        CallbackManagerForRetrieverRun,
+    )
     from langchain_core.documents import Document
     from langchain_core.retrievers import BaseRetriever
 except ImportError as e:
@@ -84,6 +87,15 @@ class HyperXRetriever(BaseRetriever):
         else:
             raise ValueError(f"Unknown strategy: {self.strategy}")
 
+    async def _aget_relevant_documents(
+        self,
+        query: str,
+        *,
+        run_manager: AsyncCallbackManagerForRetrieverRun,
+    ) -> list[Document]:
+        """Async version - delegates to sync for now."""
+        return self._get_relevant_documents(query, run_manager=run_manager)  # type: ignore
+
     def _search_strategy(self, query: str) -> list[Document]:
         """Simple search strategy - just wrap db.search()."""
         result = self.client.search(query, limit=self.k)
@@ -94,8 +106,10 @@ class HyperXRetriever(BaseRetriever):
 
         Will be fully implemented in Task 4.
         """
-        # For now, fall back to search strategy
-        return self._search_strategy(query)
+        raise NotImplementedError(
+            "Graph strategy will be implemented in Task 4. "
+            "Use strategy='search' for now."
+        )
 
     def _hyperedges_to_documents(
         self,
