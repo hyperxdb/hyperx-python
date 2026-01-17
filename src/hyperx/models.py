@@ -1,7 +1,7 @@
 """Data models for HyperX SDK."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,13 @@ class Entity(BaseModel):
     confidence: float = 1.0
     created_at: datetime
     updated_at: datetime
+    # Temporal fields
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    state: Literal["active", "deprecated", "superseded", "retired"] = "active"
+    version: int = 1
+    predecessor_id: str | None = None
+    chain_root_id: str | None = None
 
 
 class HyperedgeMember(BaseModel):
@@ -35,6 +42,13 @@ class Hyperedge(BaseModel):
     confidence: float = 1.0
     created_at: datetime
     updated_at: datetime
+    # Temporal fields
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    state: Literal["active", "deprecated", "superseded", "retired"] = "active"
+    version: int = 1
+    predecessor_id: str | None = None
+    chain_root_id: str | None = None
 
 
 class SearchResult(BaseModel):

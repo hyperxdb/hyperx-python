@@ -15,7 +15,6 @@ from hyperx.models import Entity, Hyperedge, HyperedgeMember, PathResult, Search
 from hyperx.resources.hyperedges import MemberInput
 
 __all__ = [
-    "__version__",
     "HyperX",
     "AsyncHyperX",
     "Entity",
@@ -31,3 +30,11 @@ __all__ = [
     "RateLimitError",
     "ServerError",
 ]
+
+
+# Lazy imports for optional integrations
+def __getattr__(name: str):
+    if name == "integrations":
+        from hyperx import integrations
+        return integrations
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

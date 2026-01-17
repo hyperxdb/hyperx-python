@@ -1,5 +1,7 @@
 """Async Entities API resource."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from hyperx.http import AsyncHTTPClient

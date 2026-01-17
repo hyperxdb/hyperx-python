@@ -1,3 +1,3 @@
 """Version information for HyperX SDK."""
 
-__version__ = "0.2.0"
+__version__ = "0.4.0"

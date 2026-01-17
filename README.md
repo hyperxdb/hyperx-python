@@ -178,6 +178,51 @@ for path in paths:
 
 **Why this matters:** Vector search finds "React is similar to Vue". Path finding discovers "useState connects to Redux through React's state management pattern, which inspired Redux's design." That's the difference between similarity and understanding.
 
+### Temporal Queries
+
+HyperX supports bi-temporal queries - find what was true at any point in time.
+
+```python
+from datetime import datetime
+
+# Create with temporal bounds
+edge = db.hyperedges.create(
+    description="React 18 introduces concurrent features",
+    members=[...],
+    valid_from=datetime(2022, 3, 29),  # React 18 release date
+)
+
+# Query at a specific point in time
+edges = db.hyperedges.list(as_of=datetime(2021, 1, 1))
+
+# Include deprecated knowledge
+edges = db.hyperedges.list(include_deprecated=True)
+
+# Get full history
+edges = db.hyperedges.list(include_history=True)
+```
+
+### Lifecycle Management
+
+Track knowledge evolution with lifecycle operations.
+
+```python
+# Deprecate outdated knowledge
+db.hyperedges.deprecate("h:uuid", reason="Superseded by new info")
+
+# Create new version
+new_edge = db.hyperedges.supersede(
+    "h:uuid",
+    description="Updated relationship",
+    members=[...]
+)
+
+# Get version history
+history = db.hyperedges.history("h:uuid")
+for version in history:
+    print(f"v{version.version}: {version.description}")
+```
+
 ### Search
 
 HyperX supports hybrid search combining vector similarity and text matching.
@@ -363,6 +408,77 @@ async def main():
         print(f"Created {len(entities)} entities")
 
 asyncio.run(main())
+```
+
+## Framework Integrations
+
+HyperX integrates with popular AI/ML frameworks. Install optional dependencies:
+
+```bash
+pip install hyperx[langchain]      # LangChain integration
+pip install hyperx[llamaindex]     # LlamaIndex integration
+pip install hyperx[all]            # Both frameworks
+```
+
+### LangChain
+
+Use HyperX as a LangChain retriever:
+
+```python
+from hyperx import HyperX
+from hyperx.integrations.langchain import HyperXRetriever
+
+db = HyperX(api_key="hx_sk_...")
+
+# Simple search retriever
+retriever = HyperXRetriever(client=db, strategy="search", k=10)
+
+# Graph-enhanced retriever (expands via relationships)
+retriever = HyperXRetriever(
+    client=db,
+    strategy="graph",
+    k=10,
+    max_hops=2,
+)
+
+# Use in a chain
+docs = retriever.invoke("React state management")
+```
+
+#### Full Retrieval Pipeline
+
+For advanced use cases with hybrid search and reranking:
+
+```python
+from hyperx.integrations.langchain import HyperXRetrievalPipeline
+
+pipeline = HyperXRetrievalPipeline(
+    client=db,
+    vector_weight=0.7,      # 70% semantic similarity
+    text_weight=0.3,        # 30% keyword matching
+    expand_graph=True,      # Include related concepts
+    reranker=my_rerank_fn,  # Optional: (query, docs) -> ranked docs
+    k=10,
+)
+docs = pipeline.invoke("distributed caching strategies")
+```
+
+### LlamaIndex
+
+Use HyperX as a LlamaIndex knowledge graph:
+
+```python
+from hyperx import HyperX
+from hyperx.integrations.llamaindex import HyperXKnowledgeGraph
+
+db = HyperX(api_key="hx_sk_...")
+
+# Create knowledge graph
+kg = HyperXKnowledgeGraph(client=db)
+
+# Use as retriever
+retriever = kg.as_retriever(similarity_top_k=10)
+nodes = retriever.retrieve("React state management")
 ```
 
 ## Development

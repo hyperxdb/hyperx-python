@@ -1,6 +1,5 @@
 """HTTP client wrapper for HyperX API."""
 
-import contextlib
 from typing import Any
 
 import httpx
@@ -50,8 +49,10 @@ class HTTPClient:
             return response.json() if response.content else None
 
         error_body = None
-        with contextlib.suppress(ValueError, TypeError):
+        try:
             error_body = response.json()
+        except (ValueError, TypeError):
+            pass
 
         message = error_body.get("message", response.text) if error_body else response.text
 
@@ -124,8 +125,10 @@ class AsyncHTTPClient:
             return response.json() if response.content else None
 
         error_body = None
-        with contextlib.suppress(ValueError, TypeError):
+        try:
             error_body = response.json()
+        except (ValueError, TypeError):
+            pass
 
         message = error_body.get("message", response.text) if error_body else response.text
 

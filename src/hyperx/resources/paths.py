@@ -4,6 +4,8 @@ Multi-hop reasoning paths across hypergraph relationships.
 This is HyperX's key differentiator from vector databases.
 """
 
+from __future__ import annotations
+
 from hyperx.http import HTTPClient
 from hyperx.models import PathResult, PathsResponse
 
