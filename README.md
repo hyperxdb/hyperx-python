@@ -303,6 +303,25 @@ db.hyperedges.create(
 )
 ```
 
+### Find Reasoning Paths
+
+```python
+# Find how concepts connect through relationships
+paths = db.paths.find(
+    from_entity="e:useState",
+    to_entity="e:redux",
+    max_hops=4,
+    k_paths=3
+)
+
+for path in paths:
+    print(f"Path cost: {path.cost}")
+    print(f"  Hyperedges: {' -> '.join(path.hyperedges)}")
+    print(f"  Bridges: {path.bridges}")
+```
+
+This is HyperX's key differentiator from vector databases - multi-hop reasoning paths that explain *how* concepts relate, not just that they're similar.
+
 ### Multi-Hop Reasoning for RAG
 
 ```python
