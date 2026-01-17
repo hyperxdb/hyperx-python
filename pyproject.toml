@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hyperxdb"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python SDK for HyperX - the knowledge layer for AI"
 readme = "README.md"
 license = "MIT"
@@ -38,6 +38,16 @@ dev = [
     "pytest-httpx>=0.30.0",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
+]
+langchain = [
+    "langchain-core>=0.2.0",
+]
+llamaindex = [
+    "llama-index-core>=0.10.0",
+]
+all = [
+    "langchain-core>=0.2.0",
+    "llama-index-core>=0.10.0",
 ]
 
 [project.urls]
