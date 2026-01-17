@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
-from hyperx import Entity, Hyperedge, HyperedgeMember, SearchResult
+from hyperx import Entity, Hyperedge, HyperedgeMember, PathResult, SearchResult
 from hyperx.integrations.langchain import HyperXRetriever
 
 
@@ -85,12 +85,139 @@ def test_retriever_invalid_strategy(mock_client):
         HyperXRetriever(client=mock_client, strategy="invalid", k=5)
 
 
-def test_retriever_graph_strategy_not_implemented(mock_client):
-    """Test that graph strategy raises NotImplementedError."""
-    retriever = HyperXRetriever(client=mock_client, strategy="graph", k=5)
+@pytest.fixture
+def mock_client_with_paths():
+    """Create a mock HyperX client with path finding."""
+    client = MagicMock()
+    now = datetime.now(timezone.utc)
 
-    with pytest.raises(NotImplementedError, match="Graph strategy"):
-        retriever.invoke("test")
+    # Initial search returns two entities and one hyperedge
+    # (need at least 2 entities for path finding between them)
+    client.search.return_value = SearchResult(
+        entities=[
+            Entity(
+                id="e:react",
+                name="React",
+                entity_type="technology",
+                attributes={},
+                created_at=now,
+                updated_at=now,
+            ),
+            Entity(
+                id="e:hooks",
+                name="Hooks",
+                entity_type="feature",
+                attributes={},
+                created_at=now,
+                updated_at=now,
+            ),
+        ],
+        hyperedges=[
+            Hyperedge(
+                id="h:1",
+                description="React provides Hooks",
+                members=[
+                    HyperedgeMember(entity_id="e:react", role="subject"),
+                    HyperedgeMember(entity_id="e:hooks", role="object"),
+                ],
+                attributes={},
+                created_at=now,
+                updated_at=now,
+            )
+        ],
+    )
+
+    # Path finding returns paths with hyperedge IDs
+    client.paths.find.return_value = [
+        PathResult(
+            hyperedges=["h:2"],
+            bridges=[],
+            cost=0.5,
+        )
+    ]
+
+    # Mock hyperedges.get to return full hyperedge objects
+    def get_hyperedge(hyperedge_id: str) -> Hyperedge:
+        hyperedges = {
+            "h:2": Hyperedge(
+                id="h:2",
+                description="React often pairs with Redux for state",
+                members=[
+                    HyperedgeMember(entity_id="e:react", role="subject"),
+                    HyperedgeMember(entity_id="e:redux", role="object"),
+                ],
+                attributes={},
+                created_at=now,
+                updated_at=now,
+            ),
+        }
+        return hyperedges.get(hyperedge_id)
+
+    client.hyperedges.get.side_effect = get_hyperedge
+
+    return client
+
+
+def test_retriever_graph_strategy_expands(mock_client_with_paths):
+    """Test that graph strategy expands search results via paths."""
+    retriever = HyperXRetriever(
+        client=mock_client_with_paths,
+        strategy="graph",
+        k=10,
+        max_hops=2,
+    )
+
+    docs = retriever.invoke("React")
+
+    # Should include both direct match and expanded results
+    assert len(docs) >= 1
+    descriptions = [d.page_content for d in docs]
+    # Direct match from search
+    assert any("Hooks" in d for d in descriptions)
+    # Expanded from path finding
+    assert any("Redux" in d for d in descriptions)
+    # Verify path finding was called
+    mock_client_with_paths.paths.find.assert_called()
+
+
+def test_retriever_graph_strategy_deduplicates(mock_client_with_paths):
+    """Test that graph strategy deduplicates hyperedges."""
+    now = datetime.now(timezone.utc)
+
+    # Make path finding return the same hyperedge ID as search
+    mock_client_with_paths.paths.find.return_value = [
+        PathResult(
+            hyperedges=["h:1"],  # Same ID as search result
+            bridges=[],
+            cost=0.3,
+        )
+    ]
+
+    # Mock hyperedges.get to return the same hyperedge
+    mock_client_with_paths.hyperedges.get.return_value = Hyperedge(
+        id="h:1",
+        description="React provides Hooks",
+        members=[
+            HyperedgeMember(entity_id="e:react", role="subject"),
+            HyperedgeMember(entity_id="e:hooks", role="object"),
+        ],
+        attributes={},
+        created_at=now,
+        updated_at=now,
+    )
+
+    retriever = HyperXRetriever(
+        client=mock_client_with_paths,
+        strategy="graph",
+        k=10,
+        max_hops=2,
+    )
+
+    docs = retriever.invoke("React")
+
+    # Should not have duplicates
+    ids = [d.metadata["id"] for d in docs]
+    assert len(ids) == len(set(ids))
 
 
 def test_retriever_empty_results():

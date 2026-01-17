@@ -104,12 +104,59 @@ class HyperXRetriever(BaseRetriever):
     def _graph_strategy(self, query: str) -> list[Document]:
         """Graph-enhanced strategy - search + path expansion.
 
-        Will be fully implemented in Task 4.
+        1. Run initial search
+        2. For each entity in results, find paths to related entities
+        3. Collect hyperedges from paths
+        4. Deduplicate and return
         """
-        raise NotImplementedError(
-            "Graph strategy will be implemented in Task 4. "
-            "Use strategy='search' for now."
-        )
+        # Step 1: Initial search
+        result = self.client.search(query, limit=self.k)
+        docs = self._hyperedges_to_documents(result.hyperedges, distance=0)
+        seen_ids = {edge.id for edge in result.hyperedges}
+
+        # Step 2: Get entity IDs to expand (filter by type if specified)
+        entity_ids = [e.id for e in result.entities]
+        if self.expand_types:
+            entity_ids = [
+                e.id for e in result.entities if e.entity_type in self.expand_types
+            ]
+
+        # Step 3: Find paths from each entity pair (limit to top 5 entities)
+        expanded_edges = []
+        entities_to_expand = entity_ids[:5]
+
+        for i, source_id in enumerate(entities_to_expand):
+            # Try to find paths to other entities in results
+            for target_id in entities_to_expand[i + 1 :]:
+                try:
+                    paths = self.client.paths.find(
+                        from_entity=source_id,
+                        to_entity=target_id,
+                        max_hops=self.max_hops,
+                        k_paths=self.k,
+                    )
+                    for path in paths:
+                        hops = len(path.hyperedges)
+                        for edge_id in path.hyperedges:
+                            if edge_id not in seen_ids:
+                                seen_ids.add(edge_id)
+                                # Fetch full hyperedge object
+                                try:
+                                    edge = self.client.hyperedges.get(edge_id)
+                                    expanded_edges.append((edge, hops))
+                                except Exception:
+                                    # Skip if hyperedge fetch fails
+                                    continue
+                except Exception:
+                    # Skip if path finding fails for this entity pair
+                    continue
+
+        # Step 4: Add expanded edges with distance metadata
+        for edge, hops in expanded_edges:
+            docs.extend(self._hyperedges_to_documents([edge], distance=hops))
+
+        # Return up to k documents
+        return docs[: self.k]
 
     def _hyperedges_to_documents(
         self,
