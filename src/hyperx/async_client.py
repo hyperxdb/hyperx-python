@@ -1,6 +1,7 @@
 """Async HyperX client - main entry point for async SDK usage."""
 
 from hyperx.http import DEFAULT_BASE_URL, AsyncHTTPClient
+from hyperx.resources.async_batch import AsyncBatchAPI
 from hyperx.resources.async_entities import AsyncEntitiesAPI
 from hyperx.resources.async_hyperedges import AsyncHyperedgesAPI
 from hyperx.resources.async_paths import AsyncPathsAPI
@@ -41,6 +42,7 @@ class AsyncHyperX:
         self.hyperedges = AsyncHyperedgesAPI(self._http)
         self.paths = AsyncPathsAPI(self._http)
         self.search = AsyncSearchAPI(self._http)
+        self.batch = AsyncBatchAPI(self._http)
 
     async def close(self) -> None:
         """Close the client and release resources."""

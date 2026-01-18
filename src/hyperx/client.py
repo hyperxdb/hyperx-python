@@ -1,6 +1,7 @@
 """HyperX client - main entry point for the SDK."""
 
 from hyperx.http import DEFAULT_BASE_URL, HTTPClient
+from hyperx.resources.batch import BatchAPI
 from hyperx.resources.entities import EntitiesAPI
 from hyperx.resources.hyperedges import HyperedgesAPI
 from hyperx.resources.paths import PathsAPI
@@ -44,6 +45,7 @@ class HyperX:
         self.hyperedges = HyperedgesAPI(self._http)
         self.paths = PathsAPI(self._http)
         self.search = SearchAPI(self._http)
+        self.batch = BatchAPI(self._http)
 
     def close(self) -> None:
         """Close the client and release resources."""
