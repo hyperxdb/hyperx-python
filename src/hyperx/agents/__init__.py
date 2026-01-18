@@ -1,11 +1,20 @@
 """HyperX agent tools for agentic RAG workflows.
 
-This module provides base classes and protocols for building
-agent tools that integrate with LLM frameworks.
+This module provides base classes, protocols, and ready-to-use tools
+for building agent systems that integrate with LLM frameworks.
 
 Example:
-    >>> from hyperx.agents import BaseTool, QualitySignals, ToolResult
+    >>> from hyperx import HyperX
+    >>> from hyperx.agents import SearchTool, QualitySignals, ToolResult
     >>>
+    >>> # Use ready-to-use SearchTool
+    >>> client = HyperX(api_key="hx_sk_...")
+    >>> search = SearchTool(client, mode="hybrid", default_limit=10)
+    >>> result = search.run(query="react hooks")
+    >>> if result.quality.should_retrieve_more:
+    ...     print("Consider retrieving more data")
+    >>>
+    >>> # Or implement your own tool
     >>> class MySearchTool:
     ...     @property
     ...     def name(self) -> str:
@@ -47,11 +56,13 @@ from hyperx.agents.base import (
     ToolResult,
 )
 from hyperx.agents.quality import QualityAnalyzer
+from hyperx.agents.tools import SearchTool
 
 __all__ = [
     "BaseTool",
     "QualityAnalyzer",
     "QualitySignals",
+    "SearchTool",
     "ToolError",
     "ToolResult",
 ]
