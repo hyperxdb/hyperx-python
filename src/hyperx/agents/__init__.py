@@ -104,6 +104,21 @@ Example:
     ...                 }
     ...             }
     ...         }
+
+For LangChain integration, see hyperx.agents.langchain:
+
+Example:
+    >>> from hyperx import HyperX
+    >>> from hyperx.agents.langchain import HyperXToolkit, as_langchain_tools
+    >>>
+    >>> # Quick setup with toolkit
+    >>> db = HyperX(api_key="hx_sk_...")
+    >>> toolkit = HyperXToolkit(client=db, level="explore")
+    >>> tools = toolkit.get_tools()
+    >>>
+    >>> # Use with LangGraph
+    >>> from langgraph.prebuilt import create_react_agent
+    >>> agent = create_react_agent(llm, tools)
 """
 
 from hyperx.agents.base import (
