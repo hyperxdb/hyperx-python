@@ -13,6 +13,7 @@ from hyperx.resources.search import SearchAPI
 
 if TYPE_CHECKING:
     from hyperx.cache.base import Cache
+    from hyperx.query import Query, QueryExecutor
 
 
 class HyperX:
@@ -70,6 +71,27 @@ class HyperX:
         self.paths = PathsAPI(self._http, cache=cache)
         self.search = SearchAPI(self._http, cache=cache)
         self.batch = BatchAPI(self._http)
+
+    def query(self, query: Query) -> QueryExecutor:
+        """Create query executor for fluent queries.
+
+        Build complex queries with role-based filtering using the Query builder,
+        then execute them with the returned QueryExecutor.
+
+        Args:
+            query: A Query object built with the fluent Query builder
+
+        Returns:
+            QueryExecutor that can be used to execute the query
+
+        Example:
+            >>> from hyperx.query import Query
+            >>> q = Query().where(role="subject", entity="e:react").limit(10)
+            >>> results = db.query(q).execute()
+        """
+        from hyperx.query import QueryExecutor
+
+        return QueryExecutor(self._http, query)
 
     def close(self) -> None:
         """Close the client and release resources."""

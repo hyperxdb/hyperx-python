@@ -20,6 +20,7 @@ from hyperx.exceptions import (
     ValidationError,
 )
 from hyperx.models import Entity, Hyperedge, HyperedgeMember, PathResult, SearchResult
+from hyperx.query import AsyncQueryExecutor, Query, QueryExecutor, RoleFilter
 from hyperx.resources.hyperedges import MemberInput
 
 __all__ = [
@@ -44,6 +45,11 @@ __all__ = [
     "EntityDelete",
     "HyperedgeCreate",
     "HyperedgeDelete",
+    # Query builder
+    "Query",
+    "QueryExecutor",
+    "AsyncQueryExecutor",
+    "RoleFilter",
 ]
 
 

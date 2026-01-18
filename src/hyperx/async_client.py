@@ -13,6 +13,7 @@ from hyperx.resources.async_search import AsyncSearchAPI
 
 if TYPE_CHECKING:
     from hyperx.cache.base import Cache
+    from hyperx.query import AsyncQueryExecutor, Query
 
 
 class AsyncHyperX:
@@ -67,6 +68,27 @@ class AsyncHyperX:
         self.paths = AsyncPathsAPI(self._http, cache=cache)
         self.search = AsyncSearchAPI(self._http, cache=cache)
         self.batch = AsyncBatchAPI(self._http)
+
+    def query(self, query: Query) -> AsyncQueryExecutor:
+        """Create async query executor for fluent queries.
+
+        Build complex queries with role-based filtering using the Query builder,
+        then execute them with the returned AsyncQueryExecutor.
+
+        Args:
+            query: A Query object built with the fluent Query builder
+
+        Returns:
+            AsyncQueryExecutor that can be used to execute the query
+
+        Example:
+            >>> from hyperx.query import Query
+            >>> q = Query().where(role="subject", entity="e:react").limit(10)
+            >>> results = await db.query(q).execute()
+        """
+        from hyperx.query import AsyncQueryExecutor
+
+        return AsyncQueryExecutor(self._http, query)
 
     async def close(self) -> None:
         """Close the client and release resources."""
