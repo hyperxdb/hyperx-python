@@ -5,7 +5,7 @@ for building agent systems that integrate with LLM frameworks.
 
 Example:
     >>> from hyperx import HyperX
-    >>> from hyperx.agents import SearchTool, PathsTool, QualitySignals, ToolResult
+    >>> from hyperx.agents import SearchTool, PathsTool, LookupTool, QualitySignals, ToolResult
     >>>
     >>> # Use ready-to-use SearchTool
     >>> client = HyperX(api_key="hx_sk_...")
@@ -20,6 +20,12 @@ Example:
     >>> if result.success:
     ...     for path in result.data["paths"]:
     ...         print(f"Path via: {path['hyperedges']}")
+    >>>
+    >>> # Use LookupTool to retrieve by ID
+    >>> lookup = LookupTool(client)
+    >>> result = lookup.run(id="e:react")
+    >>> if result.success:
+    ...     print(result.data["name"])
     >>>
     >>> # Or implement your own tool
     >>> class MySearchTool:
@@ -63,10 +69,11 @@ from hyperx.agents.base import (
     ToolResult,
 )
 from hyperx.agents.quality import QualityAnalyzer
-from hyperx.agents.tools import PathsTool, SearchTool
+from hyperx.agents.tools import LookupTool, PathsTool, SearchTool
 
 __all__ = [
     "BaseTool",
+    "LookupTool",
     "PathsTool",
     "QualityAnalyzer",
     "QualitySignals",

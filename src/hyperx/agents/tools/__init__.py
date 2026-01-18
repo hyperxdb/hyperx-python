@@ -5,7 +5,7 @@ systems with LLM frameworks like OpenAI, LangChain, and others.
 
 Example:
     >>> from hyperx import HyperX
-    >>> from hyperx.agents.tools import SearchTool, PathsTool
+    >>> from hyperx.agents.tools import SearchTool, PathsTool, LookupTool
     >>>
     >>> client = HyperX(api_key="hx_sk_...")
     >>> search = SearchTool(client, mode="hybrid", default_limit=10)
@@ -25,12 +25,20 @@ Example:
     >>> if result.success:
     ...     for path in result.data["paths"]:
     ...         print(f"Path cost: {path['cost']}")
+    >>>
+    >>> # Look up an entity or hyperedge by ID
+    >>> lookup = LookupTool(client)
+    >>> result = lookup.run(id="e:react")
+    >>> if result.success:
+    ...     print(result.data["name"])
 """
 
+from hyperx.agents.tools.lookup import LookupTool
 from hyperx.agents.tools.paths import PathsTool
 from hyperx.agents.tools.search import SearchTool
 
 __all__ = [
+    "LookupTool",
     "PathsTool",
     "SearchTool",
 ]
