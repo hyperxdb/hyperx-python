@@ -45,9 +45,13 @@ langchain = [
 llamaindex = [
     "llama-index-core>=0.10.0",
 ]
+redis = [
+    "redis>=4.0.0",
+]
 all = [
     "langchain-core>=0.2.0",
     "llama-index-core>=0.10.0",
+    "redis>=4.0.0",
 ]
 
 [project.urls]
