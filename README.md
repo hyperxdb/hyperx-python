@@ -537,6 +537,204 @@ retriever = kg.as_retriever(similarity_top_k=10)
 nodes = retriever.retrieve("React state management")
 ```
 
+## Agentic RAG (v0.6.0+)
+
+HyperX provides a comprehensive toolkit for building AI agents that can query, explore, and modify knowledge graphs with **built-in self-correction capabilities**.
+
+### Quick Start
+
+```python
+from hyperx import HyperX
+from hyperx.agents import create_tools
+
+db = HyperX(api_key="hx_sk_...")
+tools = create_tools(db, level="explore")
+
+# Get OpenAI function schemas for tool-using LLMs
+schemas = tools.schemas
+
+# Execute tool by name (from LLM function call response)
+result = tools.execute("hyperx_search", query="React hooks")
+
+if result.success:
+    print(result.data)
+    # Check quality signals for self-correction
+    if result.quality.should_retrieve_more:
+        print("Agent hint: Consider retrieving more results")
+```
+
+### Access Levels
+
+Tools are organized into three access levels:
+
+| Level | Tools | Use Case |
+|-------|-------|----------|
+| `"read"` (default) | SearchTool, PathsTool, LookupTool | Read-only retrieval |
+| `"explore"` | read + ExplorerTool, ExplainTool, RelationshipsTool | Exploration & explanation |
+| `"full"` | explore + EntityCrudTool, HyperedgeCrudTool | Full CRUD operations |
+
+### Quality Signals for Self-Correction
+
+Every tool returns quality signals that enable agent self-correction:
+
+```python
+result = tools.execute("hyperx_search", query="vague query")
+
+# Quality signals tell the agent when/how to improve
+quality = result.quality
+quality.confidence           # 0.0-1.0 overall confidence
+quality.coverage             # How well results cover the query
+quality.should_retrieve_more # Explicit hint to get more results
+quality.suggested_refinements  # ["Try: more specific term"]
+quality.alternative_queries    # ["React useState", "hooks API"]
+quality.missing_context_hints  # ["Consider also fetching X"]
+```
+
+### Available Tools
+
+#### Read-Level Tools
+
+```python
+from hyperx.agents import SearchTool, PathsTool, LookupTool
+
+# Configurable hybrid search
+search = SearchTool(
+    db,
+    mode="hybrid",        # "hybrid", "vector", or "text"
+    vector_weight=0.7,    # Balance semantic vs keyword
+    reranker=my_reranker, # Optional reranking function
+    default_limit=10,
+)
+result = search.run(query="React hooks", limit=20)
+
+# Multi-hop reasoning paths
+paths = PathsTool(db, default_max_hops=4)
+result = paths.run(from_entity="e:useState", to_entity="e:redux")
+
+# Direct lookup by ID
+lookup = LookupTool(db)
+result = lookup.run(id="e:react")  # or "h:hyperedge-id"
+```
+
+#### Explore-Level Tools
+
+```python
+from hyperx.agents import ExplorerTool, ExplainTool, RelationshipsTool
+
+# Explore neighbors within N hops
+explorer = ExplorerTool(db, default_max_hops=2)
+result = explorer.run(entity_id="e:react", entity_types=["concept", "framework"])
+
+# Get human-readable explanations
+explain = ExplainTool(db)
+result = explain.run(ids=["h:edge1", "h:edge2"])  # Explains paths/relationships
+
+# List all relationships for an entity
+relationships = RelationshipsTool(db)
+result = relationships.run(entity_id="e:react", role="subject")
+```
+
+#### Full-Level Tools
+
+```python
+from hyperx.agents import EntityCrudTool, HyperedgeCrudTool
+
+# Entity CRUD operations
+entity_tool = EntityCrudTool(db)
+result = entity_tool.run(action="create", name="React 19", entity_type="framework")
+result = entity_tool.run(action="update", entity_id="e:...", name="Updated Name")
+result = entity_tool.run(action="delete", entity_id="e:...")
+
+# Hyperedge CRUD operations
+edge_tool = HyperedgeCrudTool(db)
+result = edge_tool.run(
+    action="create",
+    description="React 19 introduces new features",
+    participants=[
+        {"entity_id": "e:react-19", "role": "subject"},
+        {"entity_id": "e:features", "role": "object"},
+    ]
+)
+result = edge_tool.run(action="deprecate", hyperedge_id="h:...", reason="Outdated")
+```
+
+### LangChain Agent Integration
+
+For LangChain/LangGraph agents, use `HyperXToolkit`:
+
+```python
+from hyperx import HyperX
+from hyperx.agents.langchain import HyperXToolkit, as_langchain_tools
+
+db = HyperX(api_key="hx_sk_...")
+
+# Quick setup with toolkit
+toolkit = HyperXToolkit(client=db, level="explore")
+tools = toolkit.get_tools()
+
+# Use with LangGraph
+from langgraph.prebuilt import create_react_agent
+agent = create_react_agent(llm, tools)
+
+# Or wrap custom-configured tools
+from hyperx.agents import SearchTool, PathsTool
+tools = as_langchain_tools([
+    SearchTool(db, mode="hybrid", reranker=my_reranker),
+    PathsTool(db, default_max_hops=6),
+])
+```
+
+### LlamaIndex Agent Integration
+
+For LlamaIndex agents, use `HyperXToolSpec`:
+
+```python
+from hyperx import HyperX
+from hyperx.agents.llamaindex import HyperXToolSpec, as_llamaindex_tools
+
+db = HyperX(api_key="hx_sk_...")
+
+# Quick setup with tool spec
+tool_spec = HyperXToolSpec(client=db, level="full")
+tools = tool_spec.to_tool_list()
+
+# Use with OpenAI agent
+from llama_index.agent.openai import OpenAIAgent
+agent = OpenAIAgent.from_tools(tools)
+
+# Or wrap custom tools
+tools = as_llamaindex_tools([
+    SearchTool(db, mode="vector"),
+    PathsTool(db),
+])
+```
+
+### OpenAI/Anthropic Function Calling
+
+For direct function calling without a framework:
+
+```python
+from hyperx import HyperX
+from hyperx.agents import create_tools
+
+db = HyperX(api_key="hx_sk_...")
+tools = create_tools(db, level="read")
+
+# Get OpenAI function schemas
+schemas = tools.schemas
+
+# Send to OpenAI/Anthropic with your messages
+response = openai.chat.completions.create(
+    model="gpt-4",
+    messages=messages,
+    tools=schemas,
+)
+
+# Execute the tool call
+tool_call = response.choices[0].message.tool_calls[0]
+result = tools.execute(tool_call.function.name, **json.loads(tool_call.function.arguments))
+```
+
 ## Batch Operations
 
 For bulk ingestion, use batch methods or the unified batch API.
