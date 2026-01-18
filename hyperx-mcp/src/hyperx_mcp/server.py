@@ -12,11 +12,10 @@ from mcp.types import (
     ListToolsResult,
     TextContent,
     Tool,
-    ToolParameter,
 )
 
-from hyperx import HyperX
-from hyperx.agents import create_tools
+from hyperxdb import HyperX
+from hyperxdb.agents import create_tools
 
 # Create MCP server instance
 server = Server("hyperx-mcp")
