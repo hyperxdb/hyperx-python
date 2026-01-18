@@ -3,6 +3,30 @@
 This module provides base classes, protocols, and ready-to-use tools
 for building agent systems that integrate with LLM frameworks.
 
+The recommended way to create tools is using the `create_tools()` factory:
+
+Example:
+    >>> from hyperx import HyperX
+    >>> from hyperx.agents import create_tools
+    >>>
+    >>> client = HyperX(api_key="hx_sk_...")
+    >>> tools = create_tools(client, level="explore")
+    >>>
+    >>> # Get OpenAI function schemas
+    >>> schemas = tools.schemas
+    >>>
+    >>> # Execute tool by name
+    >>> result = tools.execute("hyperx_search", query="React hooks")
+    >>> if result.success:
+    ...     print(result.data)
+
+Access levels:
+    - "read": SearchTool, PathsTool, LookupTool (default)
+    - "explore": read + ExplorerTool, ExplainTool, RelationshipsTool
+    - "full": explore + EntityCrudTool, HyperedgeCrudTool
+
+You can also use individual tools directly:
+
 Example:
     >>> from hyperx import HyperX
     >>> from hyperx.agents import SearchTool, PathsTool, LookupTool, QualitySignals, ToolResult
@@ -88,6 +112,7 @@ from hyperx.agents.base import (
     ToolError,
     ToolResult,
 )
+from hyperx.agents.factory import ToolCollection, create_tools
 from hyperx.agents.quality import QualityAnalyzer
 from hyperx.agents.tools import (
     EntityCrudTool,
@@ -112,6 +137,8 @@ __all__ = [
     "QualitySignals",
     "RelationshipsTool",
     "SearchTool",
+    "ToolCollection",
     "ToolError",
     "ToolResult",
+    "create_tools",
 ]
