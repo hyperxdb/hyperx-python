@@ -3,6 +3,10 @@
 This module provides ready-to-use tools for building agentic RAG
 systems with LLM frameworks like OpenAI, LangChain, and others.
 
+Tools are organized by access level:
+    - Read-only: SearchTool, PathsTool, LookupTool, ExplorerTool, ExplainTool, RelationshipsTool
+    - Full access: EntityCrudTool, HyperedgeCrudTool
+
 Example:
     >>> from hyperx import HyperX
     >>> from hyperx.agents.tools import SearchTool, PathsTool, LookupTool
@@ -51,16 +55,45 @@ Example:
     >>> if result.success:
     ...     for rel in result.data["relationships"]:
     ...         print(f"{rel['description']} (role: {rel['entity_role']})")
+    >>>
+    >>> # Create, update, delete entities (full access level)
+    >>> from hyperx.agents.tools import EntityCrudTool
+    >>> entity_tool = EntityCrudTool(client)
+    >>> result = entity_tool.run(
+    ...     action="create",
+    ...     name="React",
+    ...     entity_type="framework",
+    ...     attributes={"version": "18.2"}
+    ... )
+    >>> if result.success:
+    ...     print(f"Created entity: {result.data['id']}")
+    >>>
+    >>> # Create, update, deprecate, delete hyperedges (full access level)
+    >>> from hyperx.agents.tools import HyperedgeCrudTool
+    >>> edge_tool = HyperedgeCrudTool(client)
+    >>> result = edge_tool.run(
+    ...     action="create",
+    ...     description="React provides Hooks",
+    ...     participants=[
+    ...         {"entity_id": "e:react", "role": "subject"},
+    ...         {"entity_id": "e:hooks", "role": "object"},
+    ...     ]
+    ... )
+    >>> if result.success:
+    ...     print(f"Created hyperedge: {result.data['id']}")
 """
 
+from hyperx.agents.tools.crud import EntityCrudTool, HyperedgeCrudTool
 from hyperx.agents.tools.explorer import ExplainTool, ExplorerTool, RelationshipsTool
 from hyperx.agents.tools.lookup import LookupTool
 from hyperx.agents.tools.paths import PathsTool
 from hyperx.agents.tools.search import SearchTool
 
 __all__ = [
+    "EntityCrudTool",
     "ExplainTool",
     "ExplorerTool",
+    "HyperedgeCrudTool",
     "LookupTool",
     "PathsTool",
     "RelationshipsTool",

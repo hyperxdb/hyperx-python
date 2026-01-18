@@ -90,8 +90,10 @@ from hyperx.agents.base import (
 )
 from hyperx.agents.quality import QualityAnalyzer
 from hyperx.agents.tools import (
+    EntityCrudTool,
     ExplainTool,
     ExplorerTool,
+    HyperedgeCrudTool,
     LookupTool,
     PathsTool,
     RelationshipsTool,
@@ -100,8 +102,10 @@ from hyperx.agents.tools import (
 
 __all__ = [
     "BaseTool",
+    "EntityCrudTool",
     "ExplainTool",
     "ExplorerTool",
+    "HyperedgeCrudTool",
     "LookupTool",
     "PathsTool",
     "QualityAnalyzer",
