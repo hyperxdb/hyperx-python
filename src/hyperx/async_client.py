@@ -9,6 +9,7 @@ from hyperx.events import Event, EventRegistry
 from hyperx.http import DEFAULT_BASE_URL, AsyncHTTPClient
 from hyperx.resources.async_batch import AsyncBatchAPI
 from hyperx.resources.async_entities import AsyncEntitiesAPI
+from hyperx.resources.async_events import AsyncEventsAPI
 from hyperx.resources.async_hyperedges import AsyncHyperedgesAPI
 from hyperx.resources.async_paths import AsyncPathsAPI
 from hyperx.resources.async_search import AsyncSearchAPI
@@ -73,6 +74,7 @@ class AsyncHyperX:
         self.search = AsyncSearchAPI(self._http, cache=cache)
         self.batch = AsyncBatchAPI(self._http)
         self.webhooks = AsyncWebhooksAPI(self._http)
+        self.events = AsyncEventsAPI(self._http)
 
     def query(self, query: Query) -> AsyncQueryExecutor:
         """Create async query executor for fluent queries.

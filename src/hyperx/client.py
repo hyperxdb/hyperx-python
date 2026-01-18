@@ -9,6 +9,7 @@ from hyperx.events import Event, EventRegistry
 from hyperx.http import DEFAULT_BASE_URL, HTTPClient
 from hyperx.resources.batch import BatchAPI
 from hyperx.resources.entities import EntitiesAPI
+from hyperx.resources.events import EventsAPI
 from hyperx.resources.hyperedges import HyperedgesAPI
 from hyperx.resources.paths import PathsAPI
 from hyperx.resources.search import SearchAPI
@@ -76,6 +77,7 @@ class HyperX:
         self.search = SearchAPI(self._http, cache=cache)
         self.batch = BatchAPI(self._http)
         self.webhooks = WebhooksAPI(self._http)
+        self.events = EventsAPI(self._http)
 
     def query(self, query: Query) -> QueryExecutor:
         """Create query executor for fluent queries.
