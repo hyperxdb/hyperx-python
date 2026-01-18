@@ -11,6 +11,7 @@ from hyperx.batch import (
     HyperedgeDelete,
 )
 from hyperx.client import HyperX
+from hyperx.events import Event, EventHandler, EventRegistry, EventType
 from hyperx.exceptions import (
     AuthenticationError,
     HyperXError,
@@ -50,6 +51,11 @@ __all__ = [
     "QueryExecutor",
     "AsyncQueryExecutor",
     "RoleFilter",
+    # Event system
+    "Event",
+    "EventHandler",
+    "EventRegistry",
+    "EventType",
 ]
 
 

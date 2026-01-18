@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
+from hyperx.events import Event, EventRegistry
 from hyperx.http import DEFAULT_BASE_URL, HTTPClient
 from hyperx.resources.batch import BatchAPI
 from hyperx.resources.entities import EntitiesAPI
@@ -66,6 +68,7 @@ class HyperX:
         self._http = HTTPClient(api_key, base_url, timeout)
         self._cache = cache
         self._server_cache = server_cache
+        self._event_registry = EventRegistry()
 
         self.entities = EntitiesAPI(self._http)
         self.hyperedges = HyperedgesAPI(self._http)
@@ -95,11 +98,60 @@ class HyperX:
 
         return QueryExecutor(self._http, query)
 
+    def on(
+        self,
+        event_pattern: str,
+        *,
+        filter: dict[str, Any] | None = None,
+    ) -> Callable[[Callable[[Event], None]], Callable[[Event], None]]:
+        """Decorator to register an event handler.
+
+        Args:
+            event_pattern: Event type or pattern with wildcards
+                - "entity.created" - specific event
+                - "entity.*" - all entity events
+                - "*" - all events
+            filter: Optional filter conditions
+                - {"role": "author"} - only hyperedges with author role
+
+        Returns:
+            Decorator function that registers the handler
+
+        Example:
+            >>> @db.on("entity.created")
+            ... def handle_entity(event):
+            ...     print(f"New entity: {event.data['name']}")
+
+            >>> @db.on("hyperedge.created", filter={"role": "author"})
+            ... def handle_authorship(event):
+            ...     print(f"New authorship relation")
+        """
+
+        def decorator(func: Callable[[Event], None]) -> Callable[[Event], None]:
+            self._event_registry.register(event_pattern, func, filter)
+            return func
+
+        return decorator
+
+    def emit(self, event: Event) -> int:
+        """Emit an event to all matching local handlers.
+
+        Primarily for testing and internal use. In production,
+        events come from webhooks or streaming.
+
+        Args:
+            event: The event to dispatch
+
+        Returns:
+            Number of handlers that were called
+        """
+        return self._event_registry.dispatch(event)
+
     def close(self) -> None:
         """Close the client and release resources."""
         self._http.close()
 
-    def __enter__(self) -> "HyperX":
+    def __enter__(self) -> HyperX:
         return self
 
     def __exit__(self, *args: object) -> None:
