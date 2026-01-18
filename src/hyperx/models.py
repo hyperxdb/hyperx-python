@@ -96,3 +96,21 @@ class WebhookDelivery(BaseModel):
     delivered_at: datetime | None = None
     attempts: int = 0
     success: bool = False
+
+
+class Trigger(BaseModel):
+    """A custom event trigger with user-defined conditions.
+
+    Triggers evaluate conditions against events and fire
+    actions (webhooks, notifications) when conditions match.
+    """
+
+    id: str
+    name: str
+    condition: str  # Expression like "path.cost < 0.5 AND path.hops <= 2"
+    event_types: list[str]  # Events to evaluate against
+    action: Literal["webhook", "notification"]
+    webhook_id: str | None = None  # If action == "webhook"
+    active: bool = True
+    created_at: datetime
+    updated_at: datetime

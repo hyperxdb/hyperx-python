@@ -13,6 +13,7 @@ from hyperx.resources.events import EventsAPI
 from hyperx.resources.hyperedges import HyperedgesAPI
 from hyperx.resources.paths import PathsAPI
 from hyperx.resources.search import SearchAPI
+from hyperx.resources.triggers import TriggersAPI
 from hyperx.resources.webhooks import WebhooksAPI
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ class HyperX:
         self.batch = BatchAPI(self._http)
         self.webhooks = WebhooksAPI(self._http)
         self.events = EventsAPI(self._http)
+        self.triggers = TriggersAPI(self._http)
 
     def query(self, query: Query) -> QueryExecutor:
         """Create query executor for fluent queries.
