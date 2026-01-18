@@ -6,8 +6,13 @@ This is HyperX's key differentiator from vector databases.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Literal
+
 from hyperx.http import AsyncHTTPClient
 from hyperx.models import PathResult, PathsResponse
+
+if TYPE_CHECKING:
+    from hyperx.cache.base import Cache
 
 
 class AsyncPathsAPI:
@@ -28,8 +33,20 @@ class AsyncPathsAPI:
         ...         print(f"Cost: {path.cost}, Hops: {len(path.hyperedges)}")
     """
 
-    def __init__(self, http: AsyncHTTPClient):
+    def __init__(self, http: AsyncHTTPClient, cache: Cache | None = None):
         self._http = http
+        self._cache = cache
+
+    def _cache_key(
+        self,
+        from_entity: str,
+        to_entity: str,
+        max_hops: int,
+        intersection_size: int,
+        k_paths: int,
+    ) -> str:
+        """Generate a cache key for paths.find() parameters."""
+        return f"paths:{from_entity}:{to_entity}:{max_hops}:{intersection_size}:{k_paths}"
 
     async def find(
         self,
@@ -38,6 +55,9 @@ class AsyncPathsAPI:
         max_hops: int = 4,
         intersection_size: int = 1,
         k_paths: int = 3,
+        *,
+        cache: bool | None = None,
+        cache_hint: Literal["short", "medium", "long"] | None = None,
     ) -> list[PathResult]:
         """Find multi-hop paths between two entities.
 
@@ -51,6 +71,10 @@ class AsyncPathsAPI:
             max_hops: Maximum number of hyperedge hops (default: 4)
             intersection_size: Minimum bridge size between hyperedges (default: 1)
             k_paths: Number of paths to return (default: 3)
+            cache: Override cache behavior. None uses client default,
+                   True forces caching, False bypasses cache.
+            cache_hint: Server-side cache hint ("short", "medium", "long")
+                        to indicate how long the server should cache results.
 
         Returns:
             List of PathResult objects, each containing:
@@ -70,6 +94,21 @@ class AsyncPathsAPI:
             ...     for path in paths:
             ...         print(f"Path via: {' -> '.join(path.hyperedges)}")
         """
+        # Determine if caching is enabled
+        use_cache = cache if cache is not None else (self._cache is not None)
+
+        # Generate cache key
+        cache_key = self._cache_key(
+            from_entity, to_entity, max_hops, intersection_size, k_paths
+        )
+
+        # Check cache if enabled (sync operation - InMemoryCache is synchronous)
+        if use_cache and self._cache:
+            cached = self._cache.get(cache_key)
+            if cached is not None:
+                return [PathResult.model_validate(p) for p in cached]
+
+        # Build payload
         payload = {
             "from": from_entity,
             "to": to_entity,
@@ -79,6 +118,17 @@ class AsyncPathsAPI:
                 "k_paths": k_paths,
             },
         }
+
+        # Add server-side cache hint if provided
+        if cache_hint is not None:
+            payload["cache_hint"] = cache_hint
+
+        # Make API call
         data = await self._http.post("/v1/paths", json=payload)
         response = PathsResponse.model_validate(data)
+
+        # Store in cache if enabled (sync operation)
+        if use_cache and self._cache:
+            self._cache.set(cache_key, [p.model_dump() for p in response.paths])
+
         return response.paths
