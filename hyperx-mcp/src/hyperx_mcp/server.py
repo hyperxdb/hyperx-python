@@ -14,8 +14,8 @@ from mcp.types import (
     Tool,
 )
 
-from hyperxdb import HyperX
-from hyperxdb.agents import create_tools
+from hyperx import HyperX
+from hyperx.agents import create_tools
 
 # Create MCP server instance
 server = Server("hyperx-mcp")
