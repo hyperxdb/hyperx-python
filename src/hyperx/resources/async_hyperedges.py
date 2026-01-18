@@ -127,3 +127,49 @@ class AsyncHyperedgesAPI:
 
         data = await self._http.put(f"/v1/hyperedges/{hyperedge_id}", json=payload)
         return Hyperedge.model_validate(data)
+
+    async def create_many(
+        self,
+        hyperedges: list[dict[str, Any]],
+        *,
+        atomic: bool = True,
+    ) -> list[Hyperedge]:
+        """Create multiple hyperedges in a single request.
+
+        Args:
+            hyperedges: List of hyperedge dicts with keys:
+                - description (required): Relationship description
+                - members (required): List of member dicts with entity_id and role
+                - attributes (optional): Key-value attributes
+                - valid_from (optional): datetime
+                - valid_until (optional): datetime
+            atomic: If True (default), all succeed or all fail
+
+        Returns:
+            List of created Hyperedge objects
+
+        Raises:
+            HyperXError: If atomic=True and any hyperedge fails validation
+        """
+        payload = {"hyperedges": hyperedges, "atomic": atomic}
+        data = await self._http.post("/v1/hyperedges/batch", json=payload)
+        return [Hyperedge.model_validate(h) for h in data["hyperedges"]]
+
+    async def delete_many(
+        self,
+        hyperedge_ids: list[str],
+        *,
+        atomic: bool = True,
+    ) -> int:
+        """Delete multiple hyperedges.
+
+        Args:
+            hyperedge_ids: List of hyperedge IDs to delete
+            atomic: If True (default), all succeed or all fail
+
+        Returns:
+            Number of hyperedges deleted
+        """
+        payload = {"ids": hyperedge_ids, "atomic": atomic}
+        data = await self._http.post("/v1/hyperedges/batch/delete", json=payload)
+        return data["deleted"]

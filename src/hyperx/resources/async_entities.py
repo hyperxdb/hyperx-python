@@ -120,3 +120,50 @@ class AsyncEntitiesAPI:
 
         data = await self._http.put(f"/v1/entities/{entity_id}", json=payload)
         return Entity.model_validate(data)
+
+    async def create_many(
+        self,
+        entities: list[dict[str, Any]],
+        *,
+        atomic: bool = True,
+    ) -> list[Entity]:
+        """Create multiple entities in a single request.
+
+        Args:
+            entities: List of entity dicts with keys:
+                - name (required): Entity name
+                - entity_type (required): Entity type
+                - attributes (optional): Key-value attributes
+                - embedding (optional): Vector embedding
+                - valid_from (optional): datetime
+                - valid_until (optional): datetime
+            atomic: If True (default), all succeed or all fail
+
+        Returns:
+            List of created Entity objects
+
+        Raises:
+            HyperXError: If atomic=True and any entity fails validation
+        """
+        payload = {"entities": entities, "atomic": atomic}
+        data = await self._http.post("/v1/entities/batch", json=payload)
+        return [Entity.model_validate(e) for e in data["entities"]]
+
+    async def delete_many(
+        self,
+        entity_ids: list[str],
+        *,
+        atomic: bool = True,
+    ) -> int:
+        """Delete multiple entities.
+
+        Args:
+            entity_ids: List of entity IDs to delete
+            atomic: If True (default), all succeed or all fail
+
+        Returns:
+            Number of entities deleted
+        """
+        payload = {"ids": entity_ids, "atomic": atomic}
+        data = await self._http.post("/v1/entities/batch/delete", json=payload)
+        return data["deleted"]
