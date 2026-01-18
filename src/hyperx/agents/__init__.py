@@ -141,19 +141,61 @@ from hyperx.agents.tools import (
 )
 
 __all__ = [
+    # Base classes and protocols
     "BaseTool",
-    "EntityCrudTool",
-    "ExplainTool",
-    "ExplorerTool",
-    "HyperedgeCrudTool",
-    "LookupTool",
-    "PathsTool",
     "QualityAnalyzer",
     "QualitySignals",
-    "RelationshipsTool",
-    "SearchTool",
     "ToolCollection",
     "ToolError",
     "ToolResult",
+    # Factory
     "create_tools",
+    # Read-level tools
+    "SearchTool",
+    "PathsTool",
+    "LookupTool",
+    # Explore-level tools
+    "ExplorerTool",
+    "ExplainTool",
+    "RelationshipsTool",
+    # Full-level tools
+    "EntityCrudTool",
+    "HyperedgeCrudTool",
+    # LangChain integration (optional)
+    "HyperXToolkit",
+    "as_langchain_tools",
+    # LlamaIndex integration (optional)
+    "HyperXToolSpec",
+    "as_llamaindex_tools",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy import for optional framework integrations."""
+    if name in ("HyperXToolkit", "as_langchain_tools"):
+        try:
+            from hyperx.agents.langchain import HyperXToolkit, as_langchain_tools
+
+            if name == "HyperXToolkit":
+                return HyperXToolkit
+            return as_langchain_tools
+        except ImportError:
+            raise ImportError(
+                f"{name} requires langchain-core. "
+                "Install it with: pip install hyperxdb[langchain]"
+            ) from None
+
+    if name in ("HyperXToolSpec", "as_llamaindex_tools"):
+        try:
+            from hyperx.agents.llamaindex import HyperXToolSpec, as_llamaindex_tools
+
+            if name == "HyperXToolSpec":
+                return HyperXToolSpec
+            return as_llamaindex_tools
+        except ImportError:
+            raise ImportError(
+                f"{name} requires llama-index-core. "
+                "Install it with: pip install hyperxdb[llamaindex]"
+            ) from None
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

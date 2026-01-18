@@ -102,6 +102,10 @@ def __getattr__(name: str):
         from hyperx import integrations
 
         return integrations
+    if name == "agents":
+        from hyperx import agents
+
+        return agents
     if name == "RedisCache":
         # Provide helpful error message for RedisCache
         try:
