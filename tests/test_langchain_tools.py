@@ -315,6 +315,26 @@ class TestLangChainToolWrapper:
         assert parsed["success"] is False
         assert "explanation" in parsed
 
+    @pytest.mark.asyncio
+    async def test_wrapper_arun_handles_failure(self, mock_client):
+        """Test async wrapper handles tool execution failure."""
+        from hyperx.agents.langchain import as_langchain_tools
+
+        # Create search tool and wrap it
+        search_tool = SearchTool(mock_client)
+        lc_tools = as_langchain_tools([search_tool])
+        tool = lc_tools[0]
+
+        # Mock the underlying HyperX tool's arun method to raise an exception
+        tool.hyperx_tool.arun = AsyncMock(side_effect=Exception("Async API Error"))
+
+        result = await tool._arun(query="React")
+        parsed = json.loads(result)
+
+        assert parsed["success"] is False
+        assert "explanation" in parsed
+        assert "Async API Error" in parsed["explanation"]
+
     def test_wrapper_name_passthrough(self, mock_search_tool):
         """Test tool name passes through correctly."""
         from hyperx.agents.langchain import as_langchain_tools

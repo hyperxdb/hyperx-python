@@ -135,8 +135,17 @@ class LangChainToolWrapper(LangChainBaseTool):
                 - explanation: Human-readable explanation
                 - quality_hints: List of quality-related hints
         """
-        result = self.hyperx_tool.run(**kwargs)
-        return self._format_result(result)
+        try:
+            result = self.hyperx_tool.run(**kwargs)
+            return self._format_result(result)
+        except Exception as e:
+            error_result = ToolResult(
+                success=False,
+                data=None,
+                quality=QualitySignals.default(),
+                explanation=f"Tool execution failed: {e}",
+            )
+            return self._format_result(error_result)
 
     async def _arun(self, **kwargs: Any) -> str:
         """Execute the tool asynchronously.
@@ -150,8 +159,17 @@ class LangChainToolWrapper(LangChainBaseTool):
         Returns:
             JSON string containing the formatted result.
         """
-        result = await self.hyperx_tool.arun(**kwargs)
-        return self._format_result(result)
+        try:
+            result = await self.hyperx_tool.arun(**kwargs)
+            return self._format_result(result)
+        except Exception as e:
+            error_result = ToolResult(
+                success=False,
+                data=None,
+                quality=QualitySignals.default(),
+                explanation=f"Tool execution failed: {e}",
+            )
+            return self._format_result(error_result)
 
     def _format_result(self, result: ToolResult) -> str:
         """Format a ToolResult as JSON string for LangChain.
@@ -415,8 +433,21 @@ def _openai_schema_to_pydantic(
         >>> Model = _openai_schema_to_pydantic("SearchArgs", params)
         >>> m = Model(query="test")
     """
+    # Validate parameters is a dict
+    if not isinstance(parameters, dict):
+        # Return minimal valid schema for malformed input
+        return create_model(name)
+
+    # Validate and extract properties
     properties = parameters.get("properties", {})
-    required = set(parameters.get("required", []))
+    if not isinstance(properties, dict):
+        properties = {}
+
+    # Validate and extract required fields
+    required_list = parameters.get("required", [])
+    if not isinstance(required_list, list):
+        required_list = []
+    required = set(required_list)
 
     # Build field definitions for Pydantic
     field_definitions: dict[str, tuple[type, Any]] = {}
