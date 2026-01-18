@@ -46,9 +46,11 @@ from hyperx.agents.base import (
     ToolError,
     ToolResult,
 )
+from hyperx.agents.quality import QualityAnalyzer
 
 __all__ = [
     "BaseTool",
+    "QualityAnalyzer",
     "QualitySignals",
     "ToolError",
     "ToolResult",
