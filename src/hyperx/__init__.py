@@ -2,6 +2,14 @@
 
 from hyperx._version import __version__
 from hyperx.async_client import AsyncHyperX
+from hyperx.batch import (
+    BatchItemResult,
+    BatchResult,
+    EntityCreate,
+    EntityDelete,
+    HyperedgeCreate,
+    HyperedgeDelete,
+)
 from hyperx.client import HyperX
 from hyperx.exceptions import (
     AuthenticationError,
@@ -29,6 +37,13 @@ __all__ = [
     "ValidationError",
     "RateLimitError",
     "ServerError",
+    # Batch operation models
+    "BatchItemResult",
+    "BatchResult",
+    "EntityCreate",
+    "EntityDelete",
+    "HyperedgeCreate",
+    "HyperedgeDelete",
 ]
 
 
