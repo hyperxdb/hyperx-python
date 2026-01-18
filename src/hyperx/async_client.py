@@ -10,6 +10,7 @@ from hyperx.resources.async_entities import AsyncEntitiesAPI
 from hyperx.resources.async_hyperedges import AsyncHyperedgesAPI
 from hyperx.resources.async_paths import AsyncPathsAPI
 from hyperx.resources.async_search import AsyncSearchAPI
+from hyperx.resources.async_webhooks import AsyncWebhooksAPI
 
 if TYPE_CHECKING:
     from hyperx.cache.base import Cache
@@ -68,6 +69,7 @@ class AsyncHyperX:
         self.paths = AsyncPathsAPI(self._http, cache=cache)
         self.search = AsyncSearchAPI(self._http, cache=cache)
         self.batch = AsyncBatchAPI(self._http)
+        self.webhooks = AsyncWebhooksAPI(self._http)
 
     def query(self, query: Query) -> AsyncQueryExecutor:
         """Create async query executor for fluent queries.

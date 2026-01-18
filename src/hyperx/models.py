@@ -70,3 +70,29 @@ class PathsResponse(BaseModel):
     """Response from paths.find()."""
 
     paths: list[PathResult]
+
+
+class Webhook(BaseModel):
+    """A webhook subscription."""
+
+    id: str
+    url: str
+    events: list[str]
+    secret: str | None = None
+    active: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+
+class WebhookDelivery(BaseModel):
+    """Record of a webhook delivery attempt."""
+
+    id: str
+    webhook_id: str
+    event_type: str
+    payload: dict[str, Any]
+    status_code: int | None = None
+    response_body: str | None = None
+    delivered_at: datetime | None = None
+    attempts: int = 0
+    success: bool = False
