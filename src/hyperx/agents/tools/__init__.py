@@ -31,14 +31,38 @@ Example:
     >>> result = lookup.run(id="e:react")
     >>> if result.success:
     ...     print(result.data["name"])
+    >>>
+    >>> # Explore neighbors within N hops
+    >>> explorer = ExplorerTool(client, default_max_hops=2)
+    >>> result = explorer.run(entity_id="e:react")
+    >>> if result.success:
+    ...     for neighbor in result.data["neighbors"]:
+    ...         print(f"{neighbor['name']} at distance {neighbor['distance']}")
+    >>>
+    >>> # Get explanations for paths/relationships
+    >>> explain = ExplainTool(client)
+    >>> result = explain.run(ids=["h:react-hooks", "h:hooks-state"])
+    >>> if result.success:
+    ...     print(result.data["narrative"])
+    >>>
+    >>> # List all relationships for an entity
+    >>> relationships = RelationshipsTool(client)
+    >>> result = relationships.run(entity_id="e:react", role="subject")
+    >>> if result.success:
+    ...     for rel in result.data["relationships"]:
+    ...         print(f"{rel['description']} (role: {rel['entity_role']})")
 """
 
+from hyperx.agents.tools.explorer import ExplainTool, ExplorerTool, RelationshipsTool
 from hyperx.agents.tools.lookup import LookupTool
 from hyperx.agents.tools.paths import PathsTool
 from hyperx.agents.tools.search import SearchTool
 
 __all__ = [
+    "ExplainTool",
+    "ExplorerTool",
     "LookupTool",
     "PathsTool",
+    "RelationshipsTool",
     "SearchTool",
 ]

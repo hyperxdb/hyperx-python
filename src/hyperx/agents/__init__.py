@@ -27,6 +27,26 @@ Example:
     >>> if result.success:
     ...     print(result.data["name"])
     >>>
+    >>> # Explore neighbors within N hops
+    >>> explorer = ExplorerTool(client, default_max_hops=2)
+    >>> result = explorer.run(entity_id="e:react")
+    >>> if result.success:
+    ...     for neighbor in result.data["neighbors"]:
+    ...         print(f"{neighbor['name']} at distance {neighbor['distance']}")
+    >>>
+    >>> # Get explanations for paths/relationships
+    >>> explain = ExplainTool(client)
+    >>> result = explain.run(ids=["h:react-hooks", "h:hooks-state"])
+    >>> if result.success:
+    ...     print(result.data["narrative"])
+    >>>
+    >>> # List all relationships for an entity
+    >>> relationships = RelationshipsTool(client)
+    >>> result = relationships.run(entity_id="e:react", role="subject")
+    >>> if result.success:
+    ...     for rel in result.data["relationships"]:
+    ...         print(f"{rel['description']} (role: {rel['entity_role']})")
+    >>>
     >>> # Or implement your own tool
     >>> class MySearchTool:
     ...     @property
@@ -69,14 +89,24 @@ from hyperx.agents.base import (
     ToolResult,
 )
 from hyperx.agents.quality import QualityAnalyzer
-from hyperx.agents.tools import LookupTool, PathsTool, SearchTool
+from hyperx.agents.tools import (
+    ExplainTool,
+    ExplorerTool,
+    LookupTool,
+    PathsTool,
+    RelationshipsTool,
+    SearchTool,
+)
 
 __all__ = [
     "BaseTool",
+    "ExplainTool",
+    "ExplorerTool",
     "LookupTool",
     "PathsTool",
     "QualityAnalyzer",
     "QualitySignals",
+    "RelationshipsTool",
     "SearchTool",
     "ToolError",
     "ToolResult",
