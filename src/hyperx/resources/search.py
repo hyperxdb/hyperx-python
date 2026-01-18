@@ -45,6 +45,7 @@ class SearchAPI:
         limit: int = 10,
         *,
         cache: bool | None = None,
+        role_filter: dict[str, str] | None = None,
     ) -> SearchResult:
         """Hybrid search across entities and hyperedges.
 
@@ -53,6 +54,10 @@ class SearchAPI:
             limit: Maximum results to return
             cache: Override cache behavior. None uses client default,
                    True forces caching, False bypasses cache.
+            role_filter: Filter hyperedges by role conditions.
+                - {"subject": "e:react"} - only hyperedges where React is subject
+                - {"subject_type": "library"} - subject is any library type entity
+                - Multiple keys are AND conditions
 
         Returns:
             SearchResult with matching entities and hyperedges
@@ -70,8 +75,13 @@ class SearchAPI:
                     hyperedges=[Hyperedge.model_validate(h) for h in cached.get("hyperedges", [])],
                 )
 
+        # Build request payload
+        payload: dict = {"query": query, "limit": limit}
+        if role_filter:
+            payload["role_filter"] = role_filter
+
         # Make API call
-        data = self._http.post("/v1/search", json={"query": query, "limit": limit})
+        data = self._http.post("/v1/search", json=payload)
         result = SearchResult(
             entities=[Entity.model_validate(e) for e in data.get("entities", [])],
             hyperedges=[Hyperedge.model_validate(h) for h in data.get("hyperedges", [])],
@@ -92,6 +102,7 @@ class SearchAPI:
         limit: int = 10,
         *,
         cache: bool | None = None,
+        role_filter: dict[str, str] | None = None,
     ) -> SearchResult:
         """Vector-only search using embedding similarity.
 
@@ -100,6 +111,10 @@ class SearchAPI:
             limit: Maximum results to return
             cache: Override cache behavior. None uses client default,
                    True forces caching, False bypasses cache.
+            role_filter: Filter hyperedges by role conditions.
+                - {"subject": "e:react"} - only hyperedges where React is subject
+                - {"subject_type": "library"} - subject is any library type entity
+                - Multiple keys are AND conditions
 
         Returns:
             SearchResult with matching entities and hyperedges
@@ -117,10 +132,13 @@ class SearchAPI:
                     hyperedges=[Hyperedge.model_validate(h) for h in cached.get("hyperedges", [])],
                 )
 
+        # Build request payload
+        payload: dict = {"embedding": embedding, "limit": limit}
+        if role_filter:
+            payload["role_filter"] = role_filter
+
         # Make API call
-        data = self._http.post(
-            "/v1/search/vector", json={"embedding": embedding, "limit": limit}
-        )
+        data = self._http.post("/v1/search/vector", json=payload)
         result = SearchResult(
             entities=[Entity.model_validate(e) for e in data.get("entities", [])],
             hyperedges=[Hyperedge.model_validate(h) for h in data.get("hyperedges", [])],
@@ -141,6 +159,7 @@ class SearchAPI:
         limit: int = 10,
         *,
         cache: bool | None = None,
+        role_filter: dict[str, str] | None = None,
     ) -> SearchResult:
         """Text-only search using BM25 ranking.
 
@@ -149,6 +168,10 @@ class SearchAPI:
             limit: Maximum results to return
             cache: Override cache behavior. None uses client default,
                    True forces caching, False bypasses cache.
+            role_filter: Filter hyperedges by role conditions.
+                - {"subject": "e:react"} - only hyperedges where React is subject
+                - {"subject_type": "library"} - subject is any library type entity
+                - Multiple keys are AND conditions
 
         Returns:
             SearchResult with matching entities and hyperedges
@@ -166,8 +189,13 @@ class SearchAPI:
                     hyperedges=[Hyperedge.model_validate(h) for h in cached.get("hyperedges", [])],
                 )
 
+        # Build request payload
+        payload: dict = {"query": query, "limit": limit}
+        if role_filter:
+            payload["role_filter"] = role_filter
+
         # Make API call
-        data = self._http.post("/v1/search/text", json={"query": query, "limit": limit})
+        data = self._http.post("/v1/search/text", json=payload)
         result = SearchResult(
             entities=[Entity.model_validate(e) for e in data.get("entities", [])],
             hyperedges=[Hyperedge.model_validate(h) for h in data.get("hyperedges", [])],
